@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="mydiv"></div>
+    <script type="text/babel">
+	function App() {
+	  const [contacts, setContacts] = React.useState([]);
+	  const [search, setSearch] = React.useState("");
+	  const [totalPages, setTotalPages] = React.useState(0);
+	  const [currentPage, setCurrentPage] = React.useState(0);
+
+	  React.useEffect(() => {
+		getContactsForSearch();
+	  }, [search]);
+	  
+	   React.useEffect(() => {
+		if(search!="")
+		getContactsForPage();
+	   }, [currentPage]);
+	  
+	   const getContactsForPage = () => {
+	   	const characters = fetch(`http://localhost:8080/api/contact/${search}?pageNum=${currentPage}`);
+		characters.then((data) => data.json())
+		.then((data) => {
+		  setContacts(data.page.content);
+		})
+		.catch((error) => {
+			console.log(error);
+		});
+	  }
+
+	  const getContactsForSearch = () => {
+	   setCurrentPage(0);
+	   setTotalPages(0);
+		if(search!="") {
+		    const characters = fetch(`http://localhost:8080/api/contact/${search}`);
+		    characters.then(data => data.json())
+			.then(data => {
+				setContacts(data.page.content);
+				setTotalPages(data.page.totalPages);
+		    })
+		    .catch((error) => {
+				 console.log(error);
+			  });
+		}
+		else {
+		   setContacts([]);
+		}
+	  }
+	  
+  return (
+    <>
+	  <div className="search-wrapper">
+        	<input type="text" className="input" value={search} placeholder="Search" onChange={(event) => {setSearch(event.target.value)}}/>
+      </div>
+      <div className="contacts-wrapper">
+        <ul>{contacts.length > 0 && contacts ? contacts.map(item => (
+              <li key={item.id}><div className="user-name">{item.name}</div><img src={item.url} className="user-pic"/></li>
+            )) : <h1>No Results</h1>}
+        </ul>
+      </div>
+      <div className="pagination-wrapper">
+        <button onClick={() => {setCurrentPage((prevState) => prevState - 1)}} disabled={currentPage != 0 ? false : true} className="button">Prev</button>
+		<span className="current-page">{currentPage}</span>
+        <button onClick={() => {setCurrentPage((prevState) => prevState + 1)}} disabled={currentPage == totalPages-1 || totalPages == 0 ? true : false} className="button">Next</button>
+      </div>
+    </>
+  );
+  
+}
+const root = ReactDOM.createRoot(document.getElementById("mydiv"));
+root.render(<App />);
+</script>
+<link type="text/css" rel="stylesheet" href="css/contact.css">
+
+</body>
+</html>
